@@ -156,13 +156,12 @@ class UserRegistrationTest extends WebTestBase {
    * existing user's username.
    */
   function testRegistrationConflicts() {
-    $user_settings = \Drupal::config('user.settings');
+    $user_settings = $this->config('user.settings');
     // Don't require email validation for new accounts.
-    $user_settings->set('verify_mail', FALSE);
+    $user_settings->set('verify_mail', FALSE)->save();
 
     // Don't require admin approval for new accounts.
-    $user_settings->set('register', USER_REGISTER_VISITORS);
-    $user_settings->save();
+    $user_settings->set('register', USER_REGISTER_VISITORS)->save();
 
     // Set up a user to check for duplicates.
     $duplicate_user = $this->drupalCreateUser();

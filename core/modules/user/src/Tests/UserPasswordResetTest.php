@@ -75,20 +75,20 @@ class UserPasswordResetTest extends PageCacheTagsTestBase {
    * Attempts to reset a password when an email address matches two accounts.
    */
   function testUserPasswordResetDuplicateUsers() {
-    $user_settings = \Drupal::config('user.settings');
+    $user_settings = $this->config('user.settings');
+
     // Don't require email validation for new accounts.
-   $user_settings->set('verify_mail', FALSE);
+    $user_settings->set('verify_mail', FALSE)->save();
 
     // Don't require admin approval for new accounts.
-    $user_settings->set('register', USER_REGISTER_VISITORS);
-    $user_settings->save();
+    $user_settings->set('register', USER_REGISTER_VISITORS)->save();
     // Create two users.
     $user_with_email = $this->drupalCreateUser();
     $user_with_name = $this->drupalCreateUser();
 
     // Change the second user's username to the same value as the first user's
     // email address.
-   $user_with_name->name = $user_with_email->mail;
+    $user_with_name->name = $user_with_email->mail;
     $user_with_name->save();
 
     // Try and reset based on the duplicated email.

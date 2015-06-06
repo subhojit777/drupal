@@ -119,13 +119,13 @@ class UserEditTest extends WebTestBase {
 
     // Test that the first user can save their account with no errors.
     $this->drupalLogin($user_with_email);
-    $this->drupalPost("user/$user_with_email->uid/edit", array(), t('Save'));
+    $this->drupalPostForm("user/" . $user_with_email->id() . "/edit", array(), t('Save'));
     $this->assertText(t("The changes have been saved."), "The user does not need to change their username if it matches another user's email address.");
     $this->drupalLogout();
 
     // Test that the second user can save their account with no errors.
     $this->drupalLogin($user_with_name);
-    $this->drupalPost("user/$user_with_name->uid/edit", array(), t('Save'));
+    $this->drupalPostForm("user/" . $user_with_name->id() . "/edit", array(), t('Save'));
     $this->assertText(t("The changes have been saved."), "The user does not need to change their email address if it matches another user's username.");
   }
 }
