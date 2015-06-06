@@ -150,6 +150,45 @@ class UserRegistrationTest extends WebTestBase {
     $this->assertText(t('The email address @email is already taken.', array('@email' => $duplicate_user->getEmail())), 'Supplying a duplicate email address with added whitespace displays an error message');
   }
 
+  /**
+   * Ensure that a new account cannot be created when the username matches an
+   * existing user's email address, or when the email address matches an
+   * existing user's username.
+   */
+  function testRegistrationConflicts() {
+    $user_settings = \Drupal::config('user.settings');
+    // Don't require email validation for new accounts.
+    $user_settings->set('verify_mail', FALSE);
+
+    // Don't require admin approval for new accounts.
+    $user_settings->set('register', USER_REGISTER_VISITORS);
+    $user_settings->save();
+
+    // Set up a user to check for duplicates.
+    $duplicate_user = $this->drupalCreateUser();
+
+    $edit = array();
+    $edit['name'] = $duplicate_user->mail;
+    $edit['mail'] = $this->randomMachineName() . '@example.com';
+
+    // Attempt to create a new account using a username that matches an
+    // existing email.
+    $this->drupalPost('user/register', $edit, t('Create new account'));
+    $this->assertText(t('The name @name is already taken.', array('@name' => $edit['name'])), "A user cannot be created when their username matches an existing user's email address.");
+
+    // Change the username to an email address.
+    $duplicate_user->name = $name = $this->randomMachineName() . '@example.com';
+    $duplicate_user->save();
+
+    $edit['name'] = $this->randomMachineName();
+    $edit['mail'] = $name;
+
+    // Attempt to create a new account using an email that matches an existing
+    // username.
+    $this->drupalPost('user/register', $edit, t('Create new account'));
+    $this->assertText(t('The e-mail address @email is already registered.', array('@email' => $edit['mail'])), "A user cannot be created when their email address matches an existing username.");
+  }
+
   function testRegistrationDefaultValues() {
     // Don't require email verification and allow registration by site visitors
     // without administrator approval.

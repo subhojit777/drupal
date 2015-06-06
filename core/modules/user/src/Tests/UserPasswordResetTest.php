@@ -7,6 +7,8 @@
 
 namespace Drupal\user\Tests;
 
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Site\Settings;
 use Drupal\system\Tests\Cache\PageCacheTagsTestBase;
 use Drupal\user\Entity\User;
 
@@ -67,6 +69,61 @@ class UserPasswordResetTest extends PageCacheTagsTestBase {
       ->fields(array('login' => $account->getLastLoginTime()))
       ->condition('uid', $account->id())
       ->execute();
+  }
+
+  /**
+   * Attempts to reset a password when an email address matches two accounts.
+   */
+  function testUserPasswordResetDuplicateUsers() {
+    $user_settings = \Drupal::config('user.settings');
+    // Don't require email validation for new accounts.
+   $user_settings->set('verify_mail', FALSE);
+
+    // Don't require admin approval for new accounts.
+    $user_settings->set('register', USER_REGISTER_VISITORS);
+    $user_settings->save();
+    // Create two users.
+    $user_with_email = $this->drupalCreateUser();
+    $user_with_name = $this->drupalCreateUser();
+
+    // Change the second user's username to the same value as the first user's
+    // email address.
+   $user_with_name->name = $user_with_email->mail;
+    $user_with_name->save();
+
+    // Try and reset based on the duplicated email.
+    $edit = array();
+    $edit['name'] = $user_with_email->mail;
+    $this->drupalPost('user/password', $edit, t('E-mail new password'));
+    // There should be a field prompting the user to pick and account.
+    $this->assertField('choose_account', 'User is prompted to pick an account when email matches two accounts.');
+    // We should be sure to not expose another user's email to the user.
+    $this->assertNoText($user_with_name->mail, "Duplicated user's email is not exposed to the other user.");
+
+    // Select the account with the username matching the entered email.
+    $edit = array();
+    $edit['choose_account'] = Crypt::hashBase64(Settings::getHashSalt() . $user_with_email->uid);
+    $this->drupalPost(NULL, $edit, t('E-mail new password'));
+    $this->assertText(t('Further instructions have been sent to your e-mail address.'), 'User is notified that password reset was sent.');
+
+    // Make sure that right user was sent a reset email.
+    $this->assertEqual(count($this->drupalGetMails(array('key' => 'password_reset', 'to' => $user_with_email->mail))), 1, 'The right user was sent a password reset mail.');
+    // Make sure that the other user was not sent an email.
+    $this->assertEqual(count($this->drupalGetMails(array('key' => 'password_reset', 'to' => $user_with_name->mail))), 0, 'The other user was not sent a password reset mail.');
+
+    // If the user is logged in, they should not have to choose an account to
+    // reset their password.
+    $this->drupalLogin($user_with_name);
+    $this->drupalGet('user/password');
+    // There should not be a form element for name.
+    $this->assertNoField('name', 'Duplicate user is not asked for a name when resetting password while logged in.');
+    $this->drupalPost(NULL, array(), t('E-mail new password'));
+    // Make sure the user with the matching username was sent an email.
+    $this->assertText(t('Further instructions have been sent to your e-mail address.'), 'User is notified that password reset was sent when logged in.');
+    $this->assertEqual(count($this->drupalGetMails(array('key' => 'password_reset', 'to' => $user_with_name->mail))), 1, 'The right user was sent a password reset mail when logged in.');
+    // Make sure that the user with the matching email address was not sent an
+    // email. (An email was already sent to this user earlier.)
+    $this->assertEqual(count($this->drupalGetMails(array('key' => 'password_reset', 'to' => $user_with_email->mail))), 1, 'The other user was not sent a password reset mail when logged in.');
   }
 
   /**

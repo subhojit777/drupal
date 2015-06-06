@@ -102,4 +102,30 @@ class UserEditTest extends WebTestBase {
     $this->drupalPostForm("user/" . $user1->id() . "/edit", array('mail' => ''), t('Save'));
     $this->assertRaw(t("The changes have been saved."));
   }
+
+  /**
+   * Check that existing users whose username matches another user's email
+   * address or vice versa are not forced to update their username or email
+   * address.
+   */
+  function testUserEditWithConflicts() {
+    $user_with_email = $this->drupalCreateUser();
+    $user_with_name = $this->drupalCreateUser();
+
+    // Change the second user's username to the same value as the first user's
+    // email address.
+    $user_with_name->name = $user_with_email->mail;
+    $user_with_name->save();
+
+    // Test that the first user can save their account with no errors.
+    $this->drupalLogin($user_with_email);
+    $this->drupalPost("user/$user_with_email->uid/edit", array(), t('Save'));
+    $this->assertText(t("The changes have been saved."), "The user does not need to change their username if it matches another user's email address.");
+    $this->drupalLogout();
+
+    // Test that the second user can save their account with no errors.
+    $this->drupalLogin($user_with_name);
+    $this->drupalPost("user/$user_with_name->uid/edit", array(), t('Save'));
+    $this->assertText(t("The changes have been saved."), "The user does not need to change their email address if it matches another user's username.");
+  }
 }
