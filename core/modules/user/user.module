@@ -18,11 +18,8 @@ use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
 use Drupal\user\RoleInterface;
 use Drupal\user\UserInterface;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\Core\Site\Settings;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Drupal\Component\Utility\Crypt;
 
 /**
  * @file
