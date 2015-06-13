@@ -94,7 +94,7 @@ class UserPasswordResetTest extends PageCacheTagsTestBase {
     // Try and reset based on the duplicated email.
     $edit = array();
     $edit['name'] = $user_with_email->mail;
-    $this->drupalPost('user/password', $edit, t('E-mail new password'));
+    $this->drupalPostForm('user/password', $edit, t('E-mail new password'));
     // There should be a field prompting the user to pick and account.
     $this->assertField('choose_account', 'User is prompted to pick an account when email matches two accounts.');
     // We should be sure to not expose another user's email to the user.
@@ -103,7 +103,7 @@ class UserPasswordResetTest extends PageCacheTagsTestBase {
     // Select the account with the username matching the entered email.
     $edit = array();
     $edit['choose_account'] = Crypt::hashBase64(Settings::getHashSalt() . $user_with_email->uid);
-    $this->drupalPost(NULL, $edit, t('E-mail new password'));
+    $this->drupalPostForm(NULL, $edit, t('E-mail new password'));
     $this->assertText(t('Further instructions have been sent to your e-mail address.'), 'User is notified that password reset was sent.');
 
     // Make sure that right user was sent a reset email.
@@ -117,7 +117,7 @@ class UserPasswordResetTest extends PageCacheTagsTestBase {
     $this->drupalGet('user/password');
     // There should not be a form element for name.
     $this->assertNoField('name', 'Duplicate user is not asked for a name when resetting password while logged in.');
-    $this->drupalPost(NULL, array(), t('E-mail new password'));
+    $this->drupalPostForm(NULL, array(), t('E-mail new password'));
     // Make sure the user with the matching username was sent an email.
     $this->assertText(t('Further instructions have been sent to your e-mail address.'), 'User is notified that password reset was sent when logged in.');
     $this->assertEqual(count($this->drupalGetMails(array('key' => 'password_reset', 'to' => $user_with_name->mail))), 1, 'The right user was sent a password reset mail when logged in.');

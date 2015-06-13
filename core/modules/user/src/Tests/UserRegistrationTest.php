@@ -167,24 +167,27 @@ class UserRegistrationTest extends WebTestBase {
     $duplicate_user = $this->drupalCreateUser();
 
     $edit = array();
-    $edit['name'] = $duplicate_user->mail;
+    $edit['name'] = $duplicate_user->getEmail();
     $edit['mail'] = $this->randomMachineName() . '@example.com';
+    $edit['pass[pass1]'] = $password = $this->randomMachineName();
+    $edit['pass[pass2]'] = $password;
 
     // Attempt to create a new account using a username that matches an
     // existing email.
-    $this->drupalPost('user/register', $edit, t('Create new account'));
+    $this->drupalPostForm('user/register', $edit, t('Create new account'));
     $this->assertText(t('The name @name is already taken.', array('@name' => $edit['name'])), "A user cannot be created when their username matches an existing user's email address.");
 
     // Change the username to an email address.
     $duplicate_user->name = $name = $this->randomMachineName() . '@example.com';
     $duplicate_user->save();
 
+    $edit = array();
     $edit['name'] = $this->randomMachineName();
     $edit['mail'] = $name;
 
     // Attempt to create a new account using an email that matches an existing
     // username.
-    $this->drupalPost('user/register', $edit, t('Create new account'));
+    $this->drupalPostForm('user/register', $edit, t('Create new account'));
     $this->assertText(t('The e-mail address @email is already registered.', array('@email' => $edit['mail'])), "A user cannot be created when their email address matches an existing username.");
   }
 
